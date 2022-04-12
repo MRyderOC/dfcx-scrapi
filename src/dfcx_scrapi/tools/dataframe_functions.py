@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import json
+import simplejson
 import logging
 import time
 from typing import Dict, List
@@ -621,7 +622,7 @@ class DataframeFunctions(ScrapiBase):
             raise ValueError("mode must be basic or advanced")
 
         print(intent)
-        json_intent = json.dumps(intent)
+        json_intent = simplejson.dumps(intent)
         intent_pb = types.Intent.from_json(json_intent)
 
         return intent_pb
