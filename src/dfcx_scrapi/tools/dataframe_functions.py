@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import json
-import simplejson
 import logging
 import time
 from typing import Dict, List
@@ -589,7 +588,7 @@ class DataframeFunctions(ScrapiBase):
                 for _, row in tp_parts.iterrows():
                     part = {
                         "text": row["text"],
-                        "parameter_id": row["parameter_id"],
+                        "parameter_id": row["parameter_id"] if not np.isnan(row["parameter_id"]) else None,
                     }
                     parts.append(part)
 
@@ -622,7 +621,7 @@ class DataframeFunctions(ScrapiBase):
             raise ValueError("mode must be basic or advanced")
 
         print(intent)
-        json_intent = simplejson.dumps(intent, ignore_nan=True)
+        json_intent = json.dumps(intent)
         intent_pb = types.Intent.from_json(json_intent)
 
         return intent_pb
