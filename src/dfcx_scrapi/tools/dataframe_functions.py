@@ -622,7 +622,7 @@ class DataframeFunctions(ScrapiBase):
             raise ValueError("mode must be basic or advanced")
 
         print(intent)
-        json_intent = simplejson.dumps(intent)
+        json_intent = simplejson.dumps(intent, ignore_nan=True)
         intent_pb = types.Intent.from_json(json_intent)
 
         return intent_pb
