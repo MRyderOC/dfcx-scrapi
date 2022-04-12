@@ -588,7 +588,7 @@ class DataframeFunctions(ScrapiBase):
                 for _, row in tp_parts.iterrows():
                     part = {
                         "text": row["text"],
-                        "parameter_id": row["parameter_id"] if not np.isnan(row["parameter_id"]) else None,
+                        "parameter_id": row["parameter_id"] if not pd.isna(row["parameter_id"]) else None,
                     }
                     parts.append(part)
 
