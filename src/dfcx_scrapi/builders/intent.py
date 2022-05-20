@@ -52,7 +52,10 @@ class IntentBuilder:
 
 
     def _parameter_checking(self):
-        """docs here!"""
+        """Check if the annotated parameters exist
+        in the Parameter attribute of proto_obj.
+
+        """
         tp_params_set = set()
         for tp in self.proto_obj.training_phrases:
             for part in tp.parts:
@@ -90,7 +93,7 @@ class IntentBuilder:
         is_fallback: bool = False,
         description: str = None
     ) -> types.Intent:
-        """docs here!"""
+        """Create an empty intent."""
         self.proto_obj = types.Intent(
             display_name=display_name,
             priority=priority,
@@ -177,7 +180,7 @@ class IntentBuilder:
         is_list: bool = False,
         redact: bool = False
     ) -> types.Intent:
-        """docs here!"""
+        """Add a parameter to Parameter attribute of proto_obj."""
         self._check_intent_exist()
 
         # Create the new parameter and add it to the proto_obj
@@ -195,7 +198,7 @@ class IntentBuilder:
     def add_label(
         self, labels: Union[Dict[str, str], List[str]]
     ) -> types.Intent:
-        """docs here!
+        """Add a label to proto_obj.
 
         Args:
           labels (Dict[str, str] | List[str]):
