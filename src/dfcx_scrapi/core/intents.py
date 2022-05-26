@@ -74,7 +74,7 @@ class Intents(ScrapiBase):
         """
         if mode == "basic":
             intent_dict = defaultdict(list)
-            if "training_phrases" in obj:
+            if obj.training_phrases:
                 for train_phrase in obj.training_phrases:
                     item_list = []
                     if len(train_phrase.parts) > 1:
