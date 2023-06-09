@@ -20,7 +20,7 @@ from typing import Dict, List
 from google.cloud.dialogflowcx_v3beta1 import services
 from google.cloud.dialogflowcx_v3beta1 import types
 
-from dfcx_scrapi.core.scrapi_base import ScrapiBase
+from dfcx_scrapi.core import scrapi_base
 
 # logging config
 logging.basicConfig(
@@ -29,7 +29,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-class Sessions(ScrapiBase):
+class Sessions(scrapi_base.ScrapiBase):
     """Core Class for CX Session Resource functions."""
 
     def __init__(
@@ -58,22 +58,27 @@ class Sessions(ScrapiBase):
 
         self._session_id = value
 
-    @staticmethod
-    def _build_query_input(text, language_code):
-        """Build out the query_input object for the Query Request.
+    def _validate_session_id(self, session_id: str):
+        """Validate if the session_id has the proper format.
 
         Args:
-          text, the text to use for the Detect Intent request.
-          language_code, the language code to use for Detect Intent request.
-          """
-        text_input = types.session.TextInput(text=text)
-        query_input = types.session.QueryInput(
-            text=text_input, language_code=language_code)
+          session_id: an RFC 4122 formatted UUID to be used as the unique ID
+            for the duration of the conversation session. When using Python
+            uuid library, uuid.uuid4() is preferred.
 
-        return query_input
+        Raises:
+          ValueError: If the session_id doesn't have the proper format.
+        """
+        res = self._parse_resource_path("session", str(session_id), False)
+        if not res:
+            raise ValueError(
+                "Session ID must be provided in the following format: "
+                "`projects/<Project ID>/locations/<Location ID>/agents/"\
+                "<Agent ID>/sessions/<Session ID>`.\n\n"\
+                "Utilize `build_session_id` to create a new Session ID.")
 
     def build_session_id(
-        self, agent_id:str = None, overwrite:bool = True) -> str:
+        self, agent_id: str = None, overwrite: bool = True) -> str:
         """Creates a valid UUID-4 Session ID to use with other methods.
 
         Args:
@@ -90,6 +95,141 @@ class Sessions(ScrapiBase):
             self.session_id = session_id
 
         return session_id
+
+
+    @staticmethod
+    def _build_query_input(
+        text,
+        intent,
+        audio,
+        event,
+        dtmf,
+        language_code,
+    ) -> types.QueryInput:
+        """Build out the query_input object for the Query Request.
+
+        Args:
+          text, the text to use for the Detect Intent request.
+          language_code, the language code to use for Detect Intent request.
+          """
+        text_input = types.session.TextInput(text=text)
+        query_input = types.session.QueryInput(
+            text=text_input, language_code=language_code)
+
+        return query_input
+
+    @staticmethod
+    def _build_query_parameters(
+        time_zone,
+        geo_location,
+        session_entity_types,
+        payload,
+        parameters,
+        current_page,
+        disable_webhook,
+        analyze_query_text_sentiment,
+        webhook_headers,
+        flow_versions,
+        channel,
+    ):
+        """docs here!"""
+        ...
+
+    def _build_detect_intent_request(
+        self,
+        session_id,
+        query_input: types.QueryInput,
+        query_params: types.QueryParameters = None,
+        output_audio_config: types.OutputAudioConfig = None
+    ) -> types.DetectIntentRequest:
+        """docs here!"""
+        return types.DetectIntentRequest(
+            session=session_id,
+            query_params=query_params,
+            query_input=query_input,
+            output_audio_config=output_audio_config
+        )
+
+    def _get_detect_intent_response(
+        self,
+        agent_id: str,
+        detect_intent_request: types.DetectIntentRequest,
+        session_id: str = None,
+    ) -> types.DetectIntentResponse:
+        """docs here!"""
+        if not session_id:
+            session_id = self.session_id
+
+        client_options = self._set_region(agent_id)
+        session_client = services.sessions.SessionsClient(
+            client_options=client_options, credentials=self.creds
+        )
+        response = session_client.detect_intent(request=detect_intent_request)
+
+        return response
+
+    def _get_detect_intent(
+        self,
+        agent_id,
+        session_id,
+        # Query Input
+        text,
+        intent,
+        audio,
+        event,
+        dtmf,
+        language_code,
+        # Query Params
+        time_zone,
+        geo_location,
+        session_entity_types,
+        payload,
+        parameters,
+        current_page,
+        disable_webhook,
+        analyze_query_text_sentiment,
+        webhook_headers,
+        flow_versions,
+        channel,
+        # OutputAudioConfig
+    ) -> types.DetectIntentResponse:
+        """docs here!"""
+
+        query_inputs = self._build_query_input(
+            text=text,
+            intent=intent,
+            audio=audio,
+            event=event,
+            dtmf=dtmf,
+            language_code=language_code,
+        )
+
+        query_params = self._build_query_parameters(
+            time_zone=time_zone,
+            geo_location=geo_location,
+            session_entity_types=session_entity_types,
+            payload=payload,
+            parameters=parameters,
+            current_page=current_page,
+            disable_webhook=disable_webhook,
+            analyze_query_text_sentiment=analyze_query_text_sentiment,
+            webhook_headers=webhook_headers,
+            flow_versions=flow_versions,
+            channel=channel,
+        )
+
+        detect_intent_req = self._build_detect_intent_request(
+            session_id=session_id,
+            query_input=query_inputs,
+            query_params=query_params
+        )
+
+        return self._get_detect_intent_response(
+            agent_id=agent_id, session_id=session_id,
+            detect_intent_request=detect_intent_req
+        )
+
+
 
     def run_conversation(
         self,
@@ -126,7 +266,9 @@ class Sessions(ScrapiBase):
         session_client = services.sessions.SessionsClient(
             client_options=client_options, credentials=self.creds
         )
-        session_path = f"{agent_id}/sessions/{session_id}"
+
+        # session_path = f"{agent_id}/sessions/{session_id}"
+        session_path = session_id
 
         if parameters:
             query_params = types.session.QueryParameters(parameters=parameters)
@@ -142,6 +284,7 @@ class Sessions(ScrapiBase):
 
             response = session_client.detect_intent(request=request)
 
+        # TODO (miladt): Need to be refactored for api decorator to work
         for text in conversation:
             text_input = types.session.TextInput(text=text)
             query_input = types.session.QueryInput(
@@ -215,40 +358,26 @@ class Sessions(ScrapiBase):
             client_options=client_options, credentials=self.creds
         )
 
-        res = self._parse_resource_path("session", str(session_id), False)
-        if not res:
-            raise ValueError(
-                "Session ID must be provided in the following format: "
-                "`projects/<Project ID>/locations/<Location ID>/agents/"\
-                "<Agent ID>/sessions/<Session ID>`.\n\n"\
-                "Utilize `build_session_id` to create a new Session ID.")
-
+        # Validating the session_id
+        self._validate_session_id(session_id)
         logging.info(f"Starting Session ID {session_id}")
+
+        # Create DetectIntentRequest object
+        request = types.session.DetectIntentRequest()
+        request.session = session_id
+        request.query_input = self._build_query_input(text, language_code)
 
         if parameters:
             query_params = types.session.QueryParameters(parameters=parameters)
-
-            query_input = self._build_query_input(text, language_code)
-
-            request = types.session.DetectIntentRequest()
-            request.session = session_id
-            request.query_input = query_input
             request.query_params = query_params
 
-            response = session_client.detect_intent(request=request)
-
-        else:
-            query_input = self._build_query_input(text, language_code)
-
-            request = types.session.DetectIntentRequest()
-            request.session = session_id
-            request.query_input = query_input
-
+        # API call for detect_intent and return the query_result
         response = session_client.detect_intent(request)
         query_result = response.query_result
 
         return query_result
 
+    @scrapi_base.api_call_counter_decorator
     def preset_parameters(
         self, agent_id: str = None, session_id: str = None, parameters=None
     ):
